@@ -5,6 +5,10 @@ on:
     - cron: '0 2 * * *'
   workflow_dispatch:
 
+# Hier zwingen wir GitHub dazu, alle Aktionen direkt mit Node.js 24 auszuführen
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   update-data:
     runs-on: ubuntu-latest
