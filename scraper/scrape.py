@@ -1,9 +1,8 @@
-import asyncio
 import os
 import json
-from twikit import Client
+import urllib.request
+import xml.etree.ElementTree as ET
 
-# Zuordnung von Keywords im Tweet zu ISO-3 Ländercodes
 COUNTRY_MAPPING = {
     'germany': 'DEU', 'deutschland': 'DEU',
     'netherlands': 'NLD', 'holland': 'NLD',
@@ -14,56 +13,64 @@ COUNTRY_MAPPING = {
     'united kingdom': 'GBR', 'uk': 'GBR'
 }
 
-async def main():
-    # Client initialisieren
-    client = Client('en-US')
+def main():
+    # Wir nutzen eine verlässliche nitter-Instanz (Open-Source X-Viewer), um den RSS-Feed zu holen
+    # Nitter spiegelt X-Accounts komplett ohne Login-Schranken
+    rss_url = "https://nitter.privacydev.net/teslaeurope/rss"
     
-    # Login über die GitHub Secrets
-    await client.login(
-        auth_info_1=os.environ['X_USERNAME'],
-        auth_info_2=os.environ['X_EMAIL'],
-        password=os.environ['X_PASSWORD']
-    )
+    try:
+        req = urllib.request.Request(
+            rss_url, 
+            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+        )
+        with urllib.request.urlopen(req) as response:
+            xml_data = response.read()
+    except Exception as e:
+        print(f"Fehler beim Abrufen des Feeds: {e}")
+        return
+
+    # XML parsen
+    root = ET.fromstring(xml_data)
     
-    # Tweets von @teslaeurope holen
-    user = await client.get_user_by_screen_name('teslaeurope')
-    tweets = await client.get_user_tweets(user.id, 'Tweets')
-    
-    # Bestehende data.json einlesen
     data_path = os.path.join(os.path.dirname(__file__), '../public/data.json')
     with open(data_path, 'r', encoding='utf-8') as f:
         current_status = json.load(f)
+
+    # Alle Artikel (Tweets) im Feed durchgehen
+    for item in root.findall('.//item'):
+        title = item.find('title').text if item.find('title') is not None else ""
+        description = item.find('description').text if item.find('description') is not None else ""
         
-    for tweet in tweets:
-        text = tweet.text.lower()
+        # Kombiniere Text für die Suche
+        full_text = (title + " " + description).lower()
         
-        # Land im Text suchen
         found_iso = None
         for keyword, iso in COUNTRY_MAPPING.items():
-            if keyword in text:
+            if keyword in full_text:
                 found_iso = iso
                 break
                 
         if found_iso:
-            # Fall 1: Volle Zulassung
-            if 'fsd supervised' in text and ('rolling out' in text or 'approved' in text or 'certified' in text):
+            clean_text = title if title else "Tesla Europe Update"
+            # Fall 1: FSD Zulassung
+            if 'fsd supervised' in full_text and ('rolling out' in full_text or 'approved' in full_text or 'certified' in full_text):
                 current_status[found_iso] = {
                     'status': 'approved',
-                    'comment': f'Zugelassen laut X: "{tweet.text[:60]}..."'
+                    'comment': f'Zugelassen laut X: "{clean_text[:60]}..."'
                 }
-            # Fall 2: Ride-Alongs / Tests
-            elif 'ride along' in text or 'testing fsd' in text or 'pilot' in text:
+            # Fall 2: Ride-Alongs
+            elif 'ride along' in full_text or 'testing fsd' in full_text or 'pilot' in full_text:
                 if current_status.get(found_iso, {}).get('status') != 'approved':
                     current_status[found_iso] = {
                         'status': 'ridealong',
-                        'comment': f'Testphase laut X: "{tweet.text[:60]}..."'
+                        'comment': f'Testphase laut X: "{clean_text[:60]}..."'
                     }
 
-    # Aktualisierte Daten zurückschreiben
+    # Speichern
     with open(data_path, 'w', encoding='utf-8') as f:
         json.dump(current_status, f, indent=2, ensure_ascii=False)
         
-    print("data.json wurde über Python erfolgreich aktualisiert!")
+    print("data.json wurde via RSS erfolgreich aktualisiert!")
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    main()
