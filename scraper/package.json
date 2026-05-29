@@ -1,0 +1,8 @@
+{
+  "name": "fsd-x-scraper",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "dependencies": {
+    "twikit": "^2.3.0"
+  }
+}

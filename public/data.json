@@ -1,0 +1,5 @@
+{
+  "USA": { "status": "approved", "comment": "Full Release (Supervised)" },
+  "CAN": { "status": "approved", "comment": "Full Release (Supervised)" },
+  "NLD": { "status": "approved", "comment": "Zulassung durch RDW via X bestätigt." }
+}
