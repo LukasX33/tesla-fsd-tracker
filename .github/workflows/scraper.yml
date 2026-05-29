@@ -17,15 +17,7 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Twikit installieren
-        run: |
-          pip install twikit
-
       - name: Python Scraper ausführen
-        env:
-          X_USERNAME: ${{ secrets.X_USERNAME }}
-          X_EMAIL: ${{ secrets.X_EMAIL }}
-          X_PASSWORD: ${{ secrets.X_PASSWORD }}
         run: |
           python scraper/scrape.py
 
@@ -34,5 +26,5 @@ jobs:
           git config --global user.name "FSD Bot"
           git config --global user.email "bot@fsd-tracker.local"
           git add public/data.json
-          git diff-index --quiet HEAD || git commit -m "Bot: data.json via Python aktualisiert"
+          git diff-index --quiet HEAD || git commit -m "Bot: data.json via RSS aktualisiert"
           git push
