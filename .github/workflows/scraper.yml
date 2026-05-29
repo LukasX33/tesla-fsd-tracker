@@ -2,8 +2,8 @@ name: Tesla FSD Tracker Autoupdate
 
 on:
   schedule:
-    - cron: '0 2 * * *' # Läuft jede Nacht um 02:00 Uhr
-  workflow_dispatch: # Ermöglicht manuellen Start per Klick auf GitHub
+    - cron: '0 2 * * *'
+  workflow_dispatch:
 
 jobs:
   update-data:
@@ -12,29 +12,27 @@ jobs:
       - name: Code auschecken
         uses: actions/checkout@v4
 
-      - name: Node.js einrichten
-        uses: actions/setup-node@v4
+      - name: Python einrichten
+        uses: actions/setup-python@v5
         with:
-          node-level: '20'
+          python-version: '3.10'
 
-      - name: Scraper-Abhängigkeiten installieren
+      - name: Twikit installieren
         run: |
-          cd scraper
-          npm install
+          pip install twikit
 
-      - name: Scraper ausführen
+      - name: Python Scraper ausführen
         env:
           X_USERNAME: ${{ secrets.X_USERNAME }}
           X_EMAIL: ${{ secrets.X_EMAIL }}
           X_PASSWORD: ${{ secrets.X_PASSWORD }}
         run: |
-          cd scraper
-          node scrape.js
+          python scraper/scrape.py
 
       - name: Änderungen committen und pushen
         run: |
           git config --global user.name "FSD Bot"
           git config --global user.email "bot@fsd-tracker.local"
           git add public/data.json
-          git diff-index --quiet HEAD || git commit -m "Bot: data.json aktualisiert via @teslaeurope"
+          git diff-index --quiet HEAD || git commit -m "Bot: data.json via Python aktualisiert"
           git push
