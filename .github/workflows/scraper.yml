@@ -1,11 +1,11 @@
 name: Tesla FSD Tracker Autoupdate
 
-on: 
+on:
   schedule:
-    - cron: '0 2 * * *'
-  workflow_dispatch:
+    - cron: '0 2 * * *' # Läuft vollautomatisch jede Nacht um 02:00 Uhr
+  workflow_dispatch: # Erlaubt den manuellen Start über den GitHub Button
 
-# Hier zwingen wir GitHub dazu, alle Aktionen direkt mit Node.js 24 auszuführen
+# Erzwingt den modernen Node24-Standard für fehlerfreie GitHub Actions im Jahr 2026
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
@@ -25,10 +25,11 @@ jobs:
         run: |
           python scraper/scrape.py
 
-      - name: Änderungen committen und pushen
+      - name: Änderungen committen und in das Repo pushen
         run: |
           git config --global user.name "FSD Bot"
           git config --global user.email "bot@fsd-tracker.local"
           git add public/data.json
-          git diff-index --quiet HEAD || git commit -m "Bot: data.json via RSS aktualisiert"
+          # Commit wird nur erstellt, wenn der Bot tatsächlich neue Daten gefunden hat
+          git diff-index --quiet HEAD || git commit -m "Bot: data.json via RSS global aktualisiert"
           git push
